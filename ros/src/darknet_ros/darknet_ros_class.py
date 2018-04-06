@@ -7,9 +7,15 @@ import os
 from subprocess import Popen, PIPE
 
 
+import cv2
+
+
 class DarknetRosPy(object):
 	
 	def __init__(self):
+		
+		# webcam dev TODO
+		self.cap = cv2.VideoCapture(0)
 		
 		self.request_subscriber = rospy.Subscriber("detection_request", Empty, self.detection_request_callback)
 		self.result_publisher = rospy.Publisher("detection_result", String, queue_size=10)
@@ -53,11 +59,19 @@ class DarknetRosPy(object):
 				
 				self.detection_requested = False
 				
+				
+				ret, frame = self.cap.read()
+				rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+				#cv2.imshow('frame', rgb)
+				out = cv2.imwrite(self.default_stdin_line, frame)
+				
+				
+				
 				self.proc.stdin.write(self.default_stdin_line+'\n')
 				rospy.logdebug("stdin written to pipe [%s]", self.default_stdin_line)
 			
 				stdout_line = self.proc.stdout.readline()
-			
+				
 				if stdout_line != '':
 				
 					## example yaml format of stdout
@@ -81,7 +95,7 @@ class DarknetRosPy(object):
 					self.result_publisher.publish(yaml.dump(result))
 				
 				else:
-					rospy.logerr("empty stdout line")
+					rospy.logerr("Empty stdout line (probably the darknet executable terminated)")
 					return
 				
 		
@@ -99,5 +113,7 @@ if __name__ == '__main__':
 		
 		DarknetRosPy().loop()
 		
+		cv2.destroyAllWindows()
+
 	except rospy.ROSInterruptException:
 		pass
