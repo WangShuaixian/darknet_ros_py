@@ -1,0 +1,6 @@
+<launch>
+
+  <rosparam file="$(find darknet_ros_py)/ros/config/default.yaml" command="load"/>
+  <node pkg="darknet_ros_py" type="darknet_ros_py_node" name="darknet_ros_py_node" relaunch="true" output="screen">
+  </node>
+</launch>

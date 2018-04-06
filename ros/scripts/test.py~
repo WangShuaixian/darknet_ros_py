@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+import rospy, yaml
+from std_msgs.msg import String
+
+import os
+from subprocess import Popen, PIPE
+
+def detection_pipe():
+	rospy.init_node('dark_ros_py_node')
+	rospy.loginfo("Node initialised")
+	
+	darknet_bin_dir_param = rospy.get_param("darknet_bin_dir")
+	default_stdin_line = rospy.get_param("default_stdin_line")
+	
+	# check darknet path exists
+	darknet_bin_dir = os.path.expanduser(darknet_bin_dir_param)
+	if not os.path.exists(darknet_bin_dir):
+		rospy.logerr("darknet_bin_dir [%s] not valid", darknet_bin_dir)
+		return
+		
+	else:
+		rospy.loginfo("Found [%s]", darknet_bin_dir)
+	
+	darknet_bin_path = os.path.join(darknet_bin_dir, "darknet")
+	
+	if not os.path.exists(darknet_bin_path):
+		rospy.logerr("executable not found [%s]", darknet_bin_path)
+		return
+		
+	else:
+		rospy.loginfo("executable found [%s]", darknet_bin_path)
+	
+	os.chdir(darknet_bin_dir)
+
+	proc = Popen(['./darknet', 'detect', 'cfg/yolov3.cfg', 'yolov3.weights'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+	
+	
+	while not rospy.is_shutdown():
+		
+		proc.stdin.write(default_stdin_line+'\n')
+		rospy.loginfo("stdin written to pipe [%s]", default_stdin_line)
+		
+		stdout_line = proc.stdout.readline()
+		
+		if stdout_line != '':
+			
+			## TODO FOR DEBUG
+#			stdout_line = "[{\"label\": 'A', \"confidence\": 0.1381, \"x_min\": 0.543, \"x_max\": 0.546834, \"y_min\": 0.843, \"y_max\": 0.541834}, {\"label\": 'B', \"confidence\": 0.9999999, \"x_min\": 0.2, \"x_max\": 0.1, \"y_min\": 0.1, \"y_max\": 0.0}]"
+			
+			# TODO catch yaml exception		
+			try:
+				result = yaml.load(stdout_line.rstrip())
+			except yaml.YAMLError:
+				rospy.logerr("Invalid format for detections result from darknet executable")
+				return
+
+#			rospy.loginfo(result)
+			
+			for detection in result:
+				rospy.loginfo('''\n'''
+				'''label:      %s\n'''
+				'''confidence: %s\n'''
+				'''x_min:      %s\n'''
+				'''x_max:      %s\n'''
+				'''y_min:      %s\n'''
+				'''y_max:      %s''', detection['label'],detection['confidence'],detection['x_min'],detection['x_max'],detection['y_min'],detection['y_max'])
+		
+#			pub = rospy.Publisher('chatter', String)
+#			pub.publish(String(str))
+			
+		else:
+			rospy.logerr("empty stdout line")
+			break
+			
+		
+
+
+if __name__ == '__main__':
+	try:
+		detection_pipe()
+	except rospy.ROSInterruptException:
+		pass
