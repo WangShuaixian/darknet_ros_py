@@ -1,2 +1,0 @@
-darknet_bin_dir: "~/darknet/"
-default_stdin_line: "data/dog.jpg"

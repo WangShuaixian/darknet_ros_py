@@ -78,7 +78,7 @@ class DarknetRosPy(object):
 						'''y_min:      %s\n'''
 						'''y_max:      %s''', detection['class'],detection['confidence'],detection['x_min'],detection['x_max'],detection['y_min'],detection['y_max'])
 				
-					self.result_publisher.publish(String(result))
+					self.result_publisher.publish(yaml.dump(result))
 				
 				else:
 					rospy.logerr("empty stdout line")
