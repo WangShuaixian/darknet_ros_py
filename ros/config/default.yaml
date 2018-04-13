@@ -1,2 +1,3 @@
 darknet_bin_dir: "~/darknet/"
-default_stdin_line: "data/dog.jpg"
+default_stdin_line: "data/captured_image.jpg"
+rostopic_name: "/head_camera/rgb/image_rect_color/compressed"
